@@ -15,11 +15,52 @@
     />
   </head>
   <body>
-    <h1>tmp-uploader</h1>
+    <div id="app">
+      <h1>tmp-uploader</h1>
+      <template v-if="configuring || !url">
+        <h2>
+          Configuration
+        </h2>
+        <form @submit.prevent="save">
+          <p>
+            <label>
+              <strong>Upload endpoint URL</strong>
+              <input type="url" v-model="configUrl">
+            </label>
+          </p>
+          <p>
+            <button>
+              Save
+            </button>
+          </p>
+        </form>
+      </template>
+      <template v-else>
+        <button @click="configuring = true">
+          Configure
+        </button>
+      </template>
+    </div>
 
-    <p>
-      
-    </p>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.0.5/dist/vue.global.prod.js" integrity="sha256-2KnOUvjJn/oCJPCIK1g0/2k6ruZzFZ9u4KkbWJDiwl8=" crossorigin="anonymous"></script>
+    <script>
+      Vue.createApp({
+        setup() {
+          const url = Vue.ref()
+          const configuring = Vue.ref(false)
+          const configUrl = Vue.ref()
+          const save = () => {
+            configuring.value = false
+          }
+          return {
+            url,
+            configuring,
+            configUrl,
+            save,
+          }
+        }
+      }).mount('#app')
+    </script>
 
     <!-- include the Glitch button to show what the webpage is about and
           to make it easier for folks to view source and remix -->
