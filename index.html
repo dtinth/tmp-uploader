@@ -24,18 +24,19 @@
         display: flex;
         padding: 0.5em;
         background: #252423;
+        gap: 0.5em;
       }
     </style>
   </head>
   <body>
     <div id="app">
       <h1>tmp-uploader</h1>
-      <div v-if="!uploads.length">
+      <template v-if="!uploads.length">
         <p>
           To use this tool, add an extension to <a href="https://tmp.spacet.me">tmp.spacet.me</a> with this URL:
         </p>
         <copy-item value="https://raw.githubusercontent.com/dtinth/tmp-uploader/master/"></copy-item>
-      </div>
+      </template>
       <div v-for="upload of uploads" class="upload-card">
         Uploading <strong>{{ upload.name }}</strong>
         <div>
@@ -174,18 +175,18 @@
             uploads
           };
         }
-      });
-      const instance = app.mount("#app")
-      
+      });      
       app.component('copy-item', {
         props: ['value'],
         template: `<div class="copy-item">
           <input
             readonly
             size="72"
+            style="width: 100%; flex: auto"
             :value="value"
           />
           <button
+            style="flex: none"
             @click="copyTextToClipboard(value)"
           >
             Copy
@@ -203,7 +204,7 @@
           },
         },
       })
-
+      const instance = app.mount("#app")
       const startTmpSessionWith = (targetWindow, sessionId) => {
         window.addEventListener("message", async e => {
           if (e.data.id === "getfile") {
