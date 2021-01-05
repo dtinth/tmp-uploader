@@ -20,11 +20,22 @@
         padding: 1em;
         margin-bottom: 1em;
       }
+      .copy-item {
+        display: flex;
+        padding: 0.5em;
+        background: #252423;
+      }
     </style>
   </head>
   <body>
     <div id="app">
       <h1>tmp-uploader</h1>
+      <div v-if="!uploads.length">
+        <p>
+          To use this tool, add an extension to <a href="https://tmp.spacet.me">tmp.spacet.me</a> with this URL:
+        </p>
+        <copy-item value="https://raw.githubusercontent.com/dtinth/tmp-uploader/master/"></copy-item>
+      </div>
       <div v-for="upload of uploads" class="upload-card">
         Uploading <strong>{{ upload.name }}</strong>
         <div>
@@ -33,6 +44,9 @@
           >
           {{upload.status}}
         </div>
+        <div style="margin-top: 1em" v-if="upload.downloadUrl">
+          <copy-item :value="upload.downloadUrl"></copy-item>
+        </div>
       </div>
       <hr />
       <template v-if="configuring || !url">
@@ -40,6 +54,14 @@
           Configuration
         </h2>
         <form @submit.prevent="save">
+          <h3>
+            Upload URL request endpoint
+          </h3>
+          <p>
+            This endpoint should take a GET request with <code>filename</code> and <code>type</code> query parameters
+            and respond with a JSON object with <code>uploadUrl</code> and <code>downloadUrl</code> strings.
+            The file will then be uploaded to the upload URL via a PUT request and the download URL will be available for copy.
+          </p>
           <p>
             <label>
               <strong>Upload URL request endpoint</strong>
@@ -71,7 +93,7 @@
       crossorigin="anonymous"
     ></script>
     <script>
-      const instance = Vue.createApp({
+      const app = Vue.createApp({
         setup() {
           const url = Vue.ref(localStorage.TMP_UPLOADER_URL_REQUEST_ENDPOINT);
           const configuring = Vue.ref();
@@ -94,6 +116,7 @@
               name,
               blob,
               status: "Pending...",
+              downloadUrl: undefined,
               progress: undefined,
               formattedProgress: Vue.computed(() =>
                 upload.progress !== undefined
@@ -132,6 +155,7 @@
                     upload.status = `Uploading ${kb(e.loaded)}/${kb(e.total)}`
                   }
                 })
+                upload.downloadUrl = urlRequestData.downloadUrl
                 console.log(uploadResponse)
               } catch (e) {
                 upload.status = "Unable to upload: " + e;
@@ -150,7 +174,35 @@
             uploads
           };
         }
-      }).mount("#app");
+      });
+      const instance = app.mount("#app")
+      
+      app.component('copy-item', {
+        props: ['value'],
+        template: `<div class="copy-item">
+          <input
+            readonly
+            size="72"
+            :value="value"
+          />
+          <button
+            @click="copyTextToClipboard(value)"
+          >
+            Copy
+          </button>
+        </div>`,
+        methods: {
+          copyTextToClipboard(text) {
+            var copyFrom = document.createElement('textarea')
+            copyFrom.textContent = text
+            document.body.appendChild(copyFrom)
+            copyFrom.select()
+            document.execCommand('copy')
+            copyFrom.blur()
+            document.body.removeChild(copyFrom)
+          },
+        },
+      })
 
       const startTmpSessionWith = (targetWindow, sessionId) => {
         window.addEventListener("message", async e => {
