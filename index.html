@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en" data-dtinth>
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Uploader</title>
     <link
       rel="stylesheet"
@@ -28,7 +28,10 @@
       <div v-for="upload of uploads" class="upload-card">
         Uploading <strong>{{ upload.name }}</strong>
         <div>
-          <progress value="32" max="100">32%</progress>
+          <progress :value="upload.progress"
+            >{{upload.formattedProgress}}%</progress
+          >
+          {{upload.status}}
         </div>
       </div>
       <hr />
@@ -40,7 +43,7 @@
           <p>
             <label>
               <strong>Upload URL request endpoint</strong>
-              <input type="url" v-model="configUrl">
+              <input type="url" v-model="configUrl" />
             </label>
           </p>
           <p>
@@ -57,36 +60,74 @@
       </template>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/axios@0.21.1/dist/axios.min.js" integrity="sha256-JLmknTdUZeZZ267LP9qB+/DT7tvxOOKctSKeUC2KT6E=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue@3.0.5/dist/vue.global.prod.js" integrity="sha256-2KnOUvjJn/oCJPCIK1g0/2k6ruZzFZ9u4KkbWJDiwl8=" crossorigin="anonymous"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/axios@0.21.1/dist/axios.min.js"
+      integrity="sha256-JLmknTdUZeZZ267LP9qB+/DT7tvxOOKctSKeUC2KT6E="
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/vue@3.0.5/dist/vue.global.prod.js"
+      integrity="sha256-2KnOUvjJn/oCJPCIK1g0/2k6ruZzFZ9u4KkbWJDiwl8="
+      crossorigin="anonymous"
+    ></script>
     <script>
       const instance = Vue.createApp({
         setup() {
-          const url = Vue.ref(localStorage.TMP_UPLOADER_URL_REQUEST_ENDPOINT)
-          const configuring = Vue.ref()
-          const configUrl = Vue.ref()
-          const uploads = Vue.reactive([])
+          const url = Vue.ref(localStorage.TMP_UPLOADER_URL_REQUEST_ENDPOINT);
+          const configuring = Vue.ref();
+          const configUrl = Vue.ref();
+          const uploads = Vue.reactive([]);
           const configure = () => {
-            configUrl.value = url.value
-            configuring.value = true
-          }
+            configUrl.value = url.value;
+            configuring.value = true;
+          };
           const save = () => {
-            localStorage.TMP_UPLOADER_URL_REQUEST_ENDPOINT = url.value = configUrl.value
-            configuring.value = false
-          }
+            localStorage.TMP_UPLOADER_URL_REQUEST_ENDPOINT = url.value =
+              configUrl.value;
+            configuring.value = false;
+          };
           const setFile = (name, blob) => {
-            uploads.push(beginUploading(name, blob))
-          }
+            uploads.push(beginUploading(name, blob));
+          };
           const beginUploading = (name, blob) => {
             const upload = Vue.reactive({
               name,
-              blob
-            })
-            ;(async () => {
-              while (!url.value) 
-            })
-            return upload
-          }
+              blob,
+              status: "Pending...",
+              progress: undefined,
+              formattedProgress: Vue.computed(() =>
+                upload.progress !== undefined
+                  ? (100 * upload.progress).toFixed(1) + "%"
+                  : "..."
+              )
+            });
+            (async () => {
+              try {
+                while (!url.value) {
+                  upload.status = "Waiting for URL to be configured...";
+                  await new Promise(r => setTimeout(r, 1000));
+                }
+                upload.status = "Getting upload URL..."
+                const urlRequestEndpoint = url.value
+                const extraParams = new URLSearchParams()
+                extraParams.set('filename', name)
+                extraParams.set('type', blob.type)
+                const {data: urlRequestData} = await axios.get(
+                  urlRequestEndpoint +
+                  (urlRequestEndpoint.includes('?') ? '&' : '?') +
+                  extraParams.toString()
+                )
+                if (!data.uploadUrl || typeof data.uploadUrl !== 'string') {
+                  throw new Error('No `uploadUrl` string returned.')
+                }
+                console.log(urlRequestData)
+              } catch (e) {
+                upload.status = "Unable to upload: " + e;
+                console.error(e);
+              }
+            })();
+            return upload;
+          };
           return {
             url,
             configuring,
@@ -94,28 +135,31 @@
             configUrl,
             save,
             setFile,
-            uploads,
-          }
+            uploads
+          };
         }
-      }).mount('#app')
+      }).mount("#app");
 
       const startTmpSessionWith = (targetWindow, sessionId) => {
-        window.addEventListener('message', async e => {
-          if (e.data.id === 'getfile') {
-            instance.setFile(e.data.result.file.name, e.data.result.blob)
+        window.addEventListener("message", async e => {
+          if (e.data.id === "getfile") {
+            instance.setFile(e.data.result.file.name, e.data.result.blob);
           }
-        })
-        targetWindow.postMessage({
-          jsonrpc: '2.0',
-          method: 'tmp/getOpenedFile',
-          params: { sessionId },
-          id: 'getfile',
-        }, '*')
-      }
+        });
+        targetWindow.postMessage(
+          {
+            jsonrpc: "2.0",
+            method: "tmp/getOpenedFile",
+            params: { sessionId },
+            id: "getfile"
+          },
+          "*"
+        );
+      };
       {
-        const match = location.hash.match(/tmpsessionid=([\w-]+)/)
+        const match = location.hash.match(/tmpsessionid=([\w-]+)/);
         if (window.opener && match) {
-          startTmpSessionWith(window.opener, match[1])
+          startTmpSessionWith(window.opener, match[1]);
         }
       }
     </script>
