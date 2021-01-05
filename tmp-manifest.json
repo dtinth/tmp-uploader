@@ -1,0 +1,13 @@
+{
+  "name": "dtinth's uploader",
+  "description": "Upload files to cloud storage",
+  "contributes": {
+    "integrations": {
+      "uploader": {
+        "title": "Uploader",
+        "accept": ["*"],
+        "url": "https://tmp-uploader.glitch.me/"
+      }
+    }
+  }
+}

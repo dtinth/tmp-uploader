@@ -59,12 +59,16 @@
             localStorage.TMP_UPLOADER_URL_REQUEST_ENDPOINT = url.value = configUrl.value
             configuring.value = false
           }
+          const setFile = f => {
+            console.log(f)
+          }
           return {
             url,
             configuring,
             configure,
             configUrl,
             save,
+            setFile,
           }
         }
       }).mount('#app')
@@ -72,7 +76,7 @@
       const startTmpSessionWith = (targetWindow, sessionId) => {
         window.addEventListener('message', async e => {
           if (e.data.id === 'getfile') {
-            // openVideo(e.data.result.blob)
+            instance.setFile(e.data.result.blob)
           }
         })
         targetWindow.postMessage({
