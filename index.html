@@ -117,10 +117,22 @@
                   (urlRequestEndpoint.includes('?') ? '&' : '?') +
                   extraParams.toString()
                 )
-                if (!data.uploadUrl || typeof data.uploadUrl !== 'string') {
+                if (!urlRequestData.uploadUrl || typeof urlRequestData.uploadUrl !== 'string') {
                   throw new Error('No `uploadUrl` string returned.')
                 }
-                console.log(urlRequestData)
+                upload.status = "Uploading..."
+                const uploadResponse = await axios.put(urlRequestData.uploadUrl, blob, {
+                  headers: {
+                    'Content-Type': blob.type,
+                  },
+                  onUploadProgress: e => {
+                    const kb = b => (+b).toFixed(0) + ' KB'
+                    const progress = e.loaded / e.total
+                    upload.progress = progress
+                    upload.status = `Uploading ${kb(e.loaded)}/${kb(e.total)}`
+                  }
+                })
+                console.log(uploadResponse)
               } catch (e) {
                 upload.status = "Unable to upload: " + e;
                 console.error(e);
