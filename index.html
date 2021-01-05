@@ -17,6 +17,7 @@
   <body>
     <div id="app">
       <h1>tmp-uploader</h1>
+      <hr />
       <template v-if="configuring || !url">
         <h2>
           Configuration
@@ -24,7 +25,7 @@
         <form @submit.prevent="save">
           <p>
             <label>
-              <strong>Upload endpoint URL</strong>
+              <strong>Upload URL request endpoint</strong>
               <input type="url" v-model="configUrl">
             </label>
           </p>
@@ -36,30 +37,57 @@
         </form>
       </template>
       <template v-else>
-        <button @click="configuring = true">
+        <button @click="configure">
           Configure
         </button>
       </template>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.21.1/dist/axios.min.js" integrity="sha256-JLmknTdUZeZZ267LP9qB+/DT7tvxOOKctSKeUC2KT6E=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.0.5/dist/vue.global.prod.js" integrity="sha256-2KnOUvjJn/oCJPCIK1g0/2k6ruZzFZ9u4KkbWJDiwl8=" crossorigin="anonymous"></script>
     <script>
-      Vue.createApp({
+      const instance = Vue.createApp({
         setup() {
-          const url = Vue.ref()
-          const configuring = Vue.ref(false)
+          const url = Vue.ref(localStorage.TMP_UPLOADER_URL_REQUEST_ENDPOINT)
+          const configuring = Vue.ref()
           const configUrl = Vue.ref()
+          const configure = () => {
+            configUrl.value = url.value
+            configuring.value = true
+          }
           const save = () => {
+            localStorage.TMP_UPLOADER_URL_REQUEST_ENDPOINT = url.value = configUrl.value
             configuring.value = false
           }
           return {
             url,
             configuring,
+            configure,
             configUrl,
             save,
           }
         }
       }).mount('#app')
+
+      const startTmpSessionWith = (targetWindow, sessionId) => {
+        window.addEventListener('message', async e => {
+          if (e.data.id === 'getfile') {
+            // openVideo(e.data.result.blob)
+          }
+        })
+        targetWindow.postMessage({
+          jsonrpc: '2.0',
+          method: 'tmp/getOpenedFile',
+          params: { sessionId },
+          id: 'getfile',
+        }, '*')
+      }
+      {
+        const match = location.hash.match(/tmpsessionid=([\w-]+)/)
+        if (window.opener && match) {
+          startTmpSessionWith(window.opener, match[1])
+        }
+      }
     </script>
 
     <!-- include the Glitch button to show what the webpage is about and
