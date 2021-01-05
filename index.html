@@ -13,10 +13,24 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/combine/npm/water.css@2.0/out/dark.min.css,gh/dtinth/dtinth-water@v0.1/dtinth-water.min.css"
     />
+    <style>
+      .upload-card {
+        background: #090807;
+        border: 1px solid #656463;
+        padding: 1em;
+        margin-bottom: 1em;
+      }
+    </style>
   </head>
   <body>
     <div id="app">
       <h1>tmp-uploader</h1>
+      <div v-for="upload of uploads" class="upload-card">
+        Uploading <strong>{{ upload.name }}</strong>
+        <div>
+          <progress value="32" max="100">32%</progress>
+        </div>
+      </div>
       <hr />
       <template v-if="configuring || !url">
         <h2>
@@ -51,6 +65,7 @@
           const url = Vue.ref(localStorage.TMP_UPLOADER_URL_REQUEST_ENDPOINT)
           const configuring = Vue.ref()
           const configUrl = Vue.ref()
+          const uploads = Vue.reactive([])
           const configure = () => {
             configUrl.value = url.value
             configuring.value = true
@@ -59,8 +74,18 @@
             localStorage.TMP_UPLOADER_URL_REQUEST_ENDPOINT = url.value = configUrl.value
             configuring.value = false
           }
-          const setFile = f => {
-            console.log(f)
+          const setFile = (name, blob) => {
+            uploads.push(beginUploading(name, blob))
+          }
+          const beginUploading = (name, blob) => {
+            const upload = Vue.reactive({
+              name,
+              blob
+            })
+            ;(async () => {
+              while (!url.value) 
+            })
+            return upload
           }
           return {
             url,
@@ -69,6 +94,7 @@
             configUrl,
             save,
             setFile,
+            uploads,
           }
         }
       }).mount('#app')
@@ -76,7 +102,7 @@
       const startTmpSessionWith = (targetWindow, sessionId) => {
         window.addEventListener('message', async e => {
           if (e.data.id === 'getfile') {
-            instance.setFile(e.data.result.blob)
+            instance.setFile(e.data.result.file.name, e.data.result.blob)
           }
         })
         targetWindow.postMessage({
